@@ -3,34 +3,46 @@
 (require (prefix-in c: net/http-client)
          (prefix-in j: json))
 
-(provide run)
+(provide 
+  files_list_folder
+  run)
 
 (define .+ string-append)
 (define HOST "api.dropboxapi.com")
 
 (define current-token (make-parameter null))
 
-(define (header)
+(define (base-headers)
   (list (.+ "Authorization: Bearer " (current-token))
         "Content-Type: application/json"))
 
-(define (api-call uri data #:output-json? [output-json? #t])
-  (define-values (status headers in) 
+(define (api-call uri 
+                  #:data [data null] 
+                  #:headers [headers null]
+                  #:output-json? [output-json? #t])
+  (define-values (res-status res-headers res-in) 
     (c:http-sendrecv
       HOST
       uri
       #:ssl? #t
       #:method #"POST"
-      #:headers (header)
+      #:headers (append (base-headers) headers)
       #:data (j:jsexpr->string data)))
 
   (if output-json?
-    (j:read-json in)
-    in))
+    (j:read-json res-in)
+    res-in))
 
-(define (files_list_folder folder)
-  (define data (make-hash `((path . ,folder))))
-  (api-call "/2/files/list_folder" data))
+(define (files_list_folder path)
+  (define data (make-hash `((path . ,path))))
+  (api-call "/2/files/list_folder" #:data data))
+
+(define (files_download path)
+  (define data (make-hash `((path . ,path))))
+  (define headers (list (.+ "Dropbox-API-Arg: " (j:jsexpr->string data))))
+  (api-call "/2/files/download" 
+            #:headers headers 
+            #:output-json? #f))
 
 (define (run token f)
   (current-token token)
