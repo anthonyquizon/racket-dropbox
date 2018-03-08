@@ -4,8 +4,9 @@
          (prefix-in j: json))
 
 (provide 
+  setup 
   files_list_folder
-  run)
+  files_download)
 
 (define .+ string-append)
 (define HOST "api.dropboxapi.com")
@@ -44,8 +45,5 @@
             #:headers headers 
             #:output-json? #f))
 
-(define (run token f)
-  (current-token token)
-  (f)
-  ;;close connection
-  )
+(define (setup token)
+  (current-token token))
